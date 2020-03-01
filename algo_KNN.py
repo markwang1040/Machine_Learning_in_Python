@@ -56,7 +56,7 @@ class KNN:
         self.neighbors_indices_ = self.neighbors_indices_.reset_index().drop(['index'], axis=1)
 
         neighbors_values_ = self.neighbors_indices_.copy()
-        neighbors_values_ = neighbors_values_.applymap(lambda x: knn.training_matrix_.iloc[x, -1])
+        neighbors_values_ = neighbors_values_.applymap(lambda x: self.training_matrix_.iloc[x, -1])
 
         if objective == 'reg':
             return pd.DataFrame(neighbors_values_.mean(axis=1), columns=['Predictions'])
