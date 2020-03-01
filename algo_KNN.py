@@ -38,10 +38,6 @@ class KNN:
 
         return self.nearest_neighbors_
 
-    def get_values(self, i):
-        i = self.training_matrix_.iloc[i, -1]
-        return i
-
     def predict(self, X_test, objective='reg'):
         self.X_test = X_test
         assert self.X_test.shape[1] == self.X_train.shape[
