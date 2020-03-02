@@ -24,7 +24,7 @@ class KNN:
         assert type(X_train) is np.ndarray, "X_train has to be either a Pandas DataFrame or a NumPy array."
         assert type(y_train) is np.ndarray, "y_train has to be either a Pandas DataFrame or a NumPy array."
         self.training_matrix_ = pd.DataFrame((np.concatenate((X_train, y_train.reshape(-1, 1)), axis=1)))
-        return self
+        return print('KNNIsDaShiet(k_neighbors={}, distance={})'.format(self.k_neighbors, self.distance))
 
     def nearest_neighbors(self, X):
         if self.distance == 'euclidean':
