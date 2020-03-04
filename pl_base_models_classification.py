@@ -9,6 +9,8 @@ from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_sc
 
 import datetime as dt
 
+# Authors: Mark Wang <markswang@uchicago.edu>
+
 
 def fit_classification_models(X_train, y_train, X_test, y_test):
 
