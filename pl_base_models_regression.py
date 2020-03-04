@@ -10,6 +10,9 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 import datetime as dt
 
 
+# Authors: Mark Wang <markswang@uchicago.edu>
+
+
 def fit_regression_models(X_train, y_train, X_test, y_test, random_state):
 
     rfr = RandomForestRegressor(n_estimators=500, n_jobs=-1, random_state=random_state, oob_score=True)
