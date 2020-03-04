@@ -12,6 +12,10 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.pipeline import FeatureUnion
 
+
+# Authors: Mark Wang <markswang@uchicago.edu>
+
+
 def process_data(df, cat_var, cont_var):
     # feature selection
     class FeatureSelector(BaseEstimator, TransformerMixin):
