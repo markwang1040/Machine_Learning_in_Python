@@ -10,13 +10,10 @@ from sklearn.base import BaseEstimator,TransformerMixin
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import FunctionTransformer
 from sklearn.pipeline import FeatureUnion
 
-
-# Authors: Mark Wang <markswang@uchicago.edu>
-
-
-def process_data(df, cat_var, cont_var):
+def process_data(df, cat_var, cont_var, as_is):
     # feature selection
     class FeatureSelector(BaseEstimator, TransformerMixin):
         def __init__(self, feature):
@@ -26,21 +23,41 @@ def process_data(df, cat_var, cont_var):
         def transform(self, X):
             return X[self.feature]
 
+
     # continuous variables
-    cont_trans = Pipeline([
-        ('FeatureSelector', FeatureSelector(cont_var)),
-        ('std', StandardScaler())
-    ])
+    if len(cont_var) != 0:
+        cont_trans = Pipeline([
+            ('FeatureSelector', FeatureSelector(cont_var)),
+            ('std', StandardScaler())
+        ])
+    else:
+        cont_trans = Pipeline([
+            ('FeatureSelector', FeatureSelector(cont_var)),
+            ('Identity', FunctionTransformer())
+        ])
 
     # categorical variables
-    cat_trans = Pipeline([
-        ('FeatureSelector', FeatureSelector(cat_var)),
-        ('OneHotEncoding', OneHotEncoder(drop='first', sparse=False))
+    if len(cat_var) != 0:
+        cat_trans = Pipeline([
+            ('FeatureSelector', FeatureSelector(cat_var)),
+            ('OneHotEncoding', OneHotEncoder(drop='first', sparse=False))
+        ])
+    else:
+        cat_trans = Pipeline([
+            ('FeatureSelector', FeatureSelector(cat_var)),
+            ('Identity', FunctionTransformer())
+        ])
+
+    # variables to be left alone
+    as_is_select = Pipeline([
+        ('FeatureSelector', FeatureSelector(as_is)),
+        ('Identity', FunctionTransformer())
     ])
 
     preprocess = FeatureUnion([
         ('cat', cat_trans),
-        ('cont', cont_trans)
+        ('cont', cont_trans),
+        ('as_is', as_is_select)
     ])
 
     # store the transformed df in a variable
@@ -56,7 +73,7 @@ def process_data(df, cat_var, cont_var):
         cat_names += list_of_col_names
         # create a list of collated column names for categorical variables
 
-    col_names = cat_names + cont_var
+    col_names = cat_names + cont_var + as_is
     # collated column names for the df
 
     return pd.DataFrame(df, columns=col_names)
