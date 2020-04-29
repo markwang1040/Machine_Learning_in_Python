@@ -3,6 +3,8 @@ import numpy as np
 import sklearn
 from sklearn.ensemble import RandomForestClassifier
 
+# Author: Mark Wang <markswang@uchicago.edu>
+
 '''
 Compare changes in feature importances between two random forests, 
 presumably learnt from the same data with the only column different being the target variable, 
