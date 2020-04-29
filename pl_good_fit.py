@@ -4,8 +4,7 @@ from sklearn.metrics \
     import mean_squared_error, mean_absolute_error, accuracy_score, precision_score, recall_score, f1_score
 from sklearn.model_selection import ParameterGrid, cross_validate
 
-# Authors: Mark Wang <markswang@uchicago.edu>,
-#          Kan Liu <liukan07@berkeley.edu>.
+# Author: Mark Wang <markswang@uchicago.edu>
 
 class GoodFit:
     def __init__(self, objective):
