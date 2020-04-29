@@ -3,7 +3,11 @@ import numpy as np
 import sklearn
 from sklearn.ensemble import RandomForestClassifier
 
-#以这个程序的输出为基准 找魔法数字
+'''
+Compare changes in feature importances between two random forests, 
+presumably learnt from the same data with the only column different being the target variable, 
+to reflect changes in different metrics based on the same sample, or changes in a metric due to passage of time.
+'''
 
 class CompareForests:
 
