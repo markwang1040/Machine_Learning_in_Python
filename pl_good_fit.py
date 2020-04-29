@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.metrics \
     import mean_squared_error, mean_absolute_error, accuracy_score, precision_score, recall_score, f1_score
-from sklearn.model_selection import ParameterGrid
+from sklearn.model_selection import ParameterGrid, cross_validate
 
 # Authors: Mark Wang <markswang@uchicago.edu>,
 #          Kan Liu <liukan07@berkeley.edu>.
@@ -23,7 +23,7 @@ class GoodFit:
         print("GoodFit(objective={})".format(self.objective))
 
 
-    def find_the_spot(self, model, params_grid, X_train, y_train, X_test, y_test):
+    def find_the_spot(self, model, params_grid, X_train, y_train, X_test, y_test, crossv=5):
         assert type(params_grid) is dict, "The params_grid needs to a dictionary in which the keys are the possible " \
                                           "parameters of the model, and the values are lists of possible instances of " \
                                           "the parameters."
@@ -47,6 +47,7 @@ class GoodFit:
         self.params_grid = params_grid
 
         list_of_param_combinations = ParameterGrid(params_grid)
+        self.params_list_ = list_of_param_combinations
         results = pd.DataFrame(list_of_param_combinations)
 
         if self.objective == 'reg':
@@ -54,7 +55,6 @@ class GoodFit:
             test_mse = []
             train_mae = []
             test_mae = []
-            estimator = []
             for combo in list_of_param_combinations:
                 model = model.set_params(**combo)
                 model.fit(X_train, y_train)
@@ -68,18 +68,31 @@ class GoodFit:
                 test_mse.append(mse_test)
                 train_mae.append(mae_train)
                 test_mae.append(mae_test)
-                estimator.append(model)
             MSE_diff = [i - j for i, j in zip(train_mse, test_mse)]
             MAE_diff = [i - j for i, j in zip(train_mae, test_mae)]
-            self.estimators_ = estimator
             scores = pd.DataFrame({'MSE_train':train_mse, 'MSE_test':test_mse, 'MSE_diff':MSE_diff,
                                'MAE_train':train_mae, 'MAE_test':test_mae, 'MAE_diff':MAE_diff})
             self.results_ = results.join(scores)
             return self.results_
 
         else:
-            pass
-
+            training_acc = []
+            testing_acc = []
+            for combo in list_of_param_combinations:
+                model = self.model.set_params(**combo)
+                model.fit(X_train, y_train)
+                y_pred_train = model.predict(X_train)
+                y_pred_test = model.predict(X_test)
+                scores_train = cross_validate(model, X_train, y_train, cv=crossv, scoring=['accuracy'], n_jobs=-1)
+                acc_train = np.mean(scores_train['test_accuracy'])
+                scores_test = cross_validate(model, X_test, y_test, cv=crossv, scoring=['accuracy'], n_jobs=-1)
+                acc_test = np.mean(scores_test['test_accuracy'])
+                training_acc.append(acc_train)
+                testing_acc.append(acc_test)
+            acc_diff = [i - j for i, j in zip(training_acc, testing_acc)]
+            scores = pd.DataFrame({'ACC_train': training_acc, 'ACC_test': testing_acc, 'ACC_diff': acc_diff})
+            self.results_ = results.join(scores)
+            return self.results_
 
 
 
