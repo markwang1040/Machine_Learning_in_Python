@@ -3,8 +3,10 @@ import numpy as np
 from sklearn.metrics \
     import mean_squared_error, mean_absolute_error, accuracy_score, precision_score, recall_score, f1_score
 from sklearn.model_selection import ParameterGrid, cross_validate
+from sklearn.base import clone
 
-# Author: Mark Wang <markswang@uchicago.edu>
+# Authors: Mark Wang <markswang@uchicago.edu>,
+#          Kan Liu <liukan07@berkeley.edu>.
 
 class GoodFit:
     def __init__(self, objective):
@@ -42,23 +44,24 @@ class GoodFit:
 
         assert X_test.shape[1] == X_train.shape[1], "The number of columns of X_train and X_test must be equal."
 
-        self.model = model
+        self.base_model_ = model
         self.params_grid = params_grid
 
         list_of_param_combinations = ParameterGrid(params_grid)
-        self.params_list_ = list_of_param_combinations
         results = pd.DataFrame(list_of_param_combinations)
+
 
         if self.objective == 'reg':
             train_mse = []
             test_mse = []
             train_mae = []
             test_mae = []
+            estimators = []
             for combo in list_of_param_combinations:
-                model = model.set_params(**combo)
-                model.fit(X_train, y_train)
-                y_pred_train = model.predict(X_train)
-                y_pred_test = model.predict(X_test)
+                model_new = clone(self.base_model_).set_params(**combo)
+                model_new.fit(X_train, y_train)
+                y_pred_train = model_new.predict(X_train)
+                y_pred_test = model_new.predict(X_test)
                 mse_train = mean_squared_error(y_train, y_pred_train)
                 mse_test = mean_squared_error(y_test, y_pred_test)
                 mae_train = mean_absolute_error(y_train, y_pred_train)
@@ -67,8 +70,10 @@ class GoodFit:
                 test_mse.append(mse_test)
                 train_mae.append(mae_train)
                 test_mae.append(mae_test)
+                estimators.append(model_new)
             MSE_diff = [i - j for i, j in zip(train_mse, test_mse)]
             MAE_diff = [i - j for i, j in zip(train_mae, test_mae)]
+            self.estimators_ = estimators
             scores = pd.DataFrame({'MSE_train':train_mse, 'MSE_test':test_mse, 'MSE_diff':MSE_diff,
                                'MAE_train':train_mae, 'MAE_test':test_mae, 'MAE_diff':MAE_diff})
             self.results_ = results.join(scores)
@@ -77,18 +82,21 @@ class GoodFit:
         else:
             training_acc = []
             testing_acc = []
+            estimators = []
             for combo in list_of_param_combinations:
-                model = self.model.set_params(**combo)
-                model.fit(X_train, y_train)
-                y_pred_train = model.predict(X_train)
-                y_pred_test = model.predict(X_test)
-                scores_train = cross_validate(model, X_train, y_train, cv=crossv, scoring=['accuracy'], n_jobs=-1)
+                model_new = clone(self.base_model_).set_params(**combo)
+                model_new.fit(X_train, y_train)
+                y_pred_train = model_new.predict(X_train)
+                y_pred_test = model_new.predict(X_test)
+                scores_train = cross_validate(model_new, X_train, y_train, cv=crossv, scoring=['accuracy'], n_jobs=-1)
                 acc_train = np.mean(scores_train['test_accuracy'])
-                scores_test = cross_validate(model, X_test, y_test, cv=crossv, scoring=['accuracy'], n_jobs=-1)
+                scores_test = cross_validate(model_new, X_test, y_test, cv=crossv, scoring=['accuracy'], n_jobs=-1)
                 acc_test = np.mean(scores_test['test_accuracy'])
                 training_acc.append(acc_train)
                 testing_acc.append(acc_test)
+                estimators.append(model_new)
             acc_diff = [i - j for i, j in zip(training_acc, testing_acc)]
+            self.estimators_ = estimators
             scores = pd.DataFrame({'ACC_train': training_acc, 'ACC_test': testing_acc, 'ACC_diff': acc_diff})
             self.results_ = results.join(scores)
             return self.results_
