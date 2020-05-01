@@ -8,7 +8,7 @@ output: a dataframe X with categorical variables one-hot encoded with drop_first
     
 ### good_fit: pipeline for hyper parameter tuning
 
-inputs: objective: {'clf', 'reg'}, base model, X_train, X_test, y_train, y_test, random_state, cross validation folds \n
+inputs: objective: {'clf', 'reg'}, base model, X_train, X_test, y_train, y_test, random_state, cross validation folds <br>
 outputs: <br>
         1. a log of parameters with which to tune the models, as well as training and testing error metrics, all cross     -validated with k folds as specified by the user; returned after calling function and stored as attribute <br>
         2. a list of fitted estimators in accordance to the sequence of combinations of parameters; stored as attribute <br>
