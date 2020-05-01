@@ -10,8 +10,8 @@ pipelines for faster workflow and cleaner presentation
 
 - inputs: objective: {'clf', 'reg'}, base model, X_train, X_test, y_train, y_test, random_state, cross validation folds <br>
 - outputs: <br>
-            1. a log of parameters with which to tune the models, as well as training and testing error metrics, all cross-validated with k folds as specified by the user; returned after calling function and stored as attribute <br>
-            2. a list of fitted estimators in accordance to the sequence of combinations of parameters; stored as attribute <br>
+            * 1. a log of parameters with which to tune the models, as well as training and testing error metrics, all cross-validated with k folds as specified by the user; returned after calling function and stored as attribute <br>
+            * 2. a list of fitted estimators in accordance to the sequence of combinations of parameters; stored as attribute <br>
 
 the important thing here is that the results are returned as a log as opposed to a single outcome as in sklearn, and that the fitted estimators are not lost but stored, for use through indexing anytime <br>
     
