@@ -15,7 +15,7 @@ pipelines for faster workflow and cleaner presentation
 
 the important thing here is that the results are returned as a log as opposed to a single outcome as in sklearn, and that the fitted estimators are not lost but stored, for use through indexing anytime <br>
     
-### 3. compare: class and methods for comparing forests/trees
+### 3. compare: class and methods for comparing forests/trees, for Tencent
 
 - inputs: 2 fitted models of the same kind:{'RandomForestClassifier', 'ExtraTreeClassifier', 'DecisionTreeClassifier'} <br>
 - outputs: a table of feature importances changes and related statistics, and a smaller table of features with the most drastic increase/decrease in feature importances and related statistics <br>
