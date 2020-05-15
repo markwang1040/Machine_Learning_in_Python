@@ -11,44 +11,9 @@ from h2o.tree import H2OTree
 
 class Woodsmith:
 
-    def __init__(self):
-
-        pass
-
-    #TODO
-    def feature_kaopu(self,forests=[]):
-    def feature_importance_changes(self, features=[], cutoff=None, all_good=False):
-        add standard deviation to all_results_
-
-    def longestCommonPrefix(self, m):
+    def __init__(self, model1, model2):
         """
-        Slick, Pythonic LCP function for use in later functions.
-
-        :param
-            m: list of strings from which to search for the LCP.
-        :return:
-            string: the LCP of all strings in the list.
-        """
-
-        if not m: return ''
-
-        # making use of the fact that the list of strings will be sorted and items retrieved min/max by alphebetical order
-        s1 = min(m)
-        s2 = max(m)
-
-        for i, c in enumerate(s1):
-            if c != s2[i]:
-                # stop until the split index is reached
-                return s1[:i]
-        return s1
-
-
-    def importance_changes(self, model1, model2, cutoff=1):
-        """
-        Takes two fitted forests and outputs 2 dataframes: the changes of the importance of each feature used in training
-        the two forests as well as the standard deviation of each feature importance, and a smaller dataframe detailing
-        the above mentioned information of those features with the maximum increase and decrease of rank of feature importance
-        across two forests.
+        Takes in two models for comparison.
 
         The two forests should have been trained on the same features. If the inputs are objects from the sklearn package,
         then the names of the features before and after the one-hot encoding of the features should have been already
@@ -60,34 +25,10 @@ class Woodsmith:
         :param
             model2: fitted instance of  forest object, of type [sklearn.ensemble._forest.RandomForestClassifier,
             h2o.estimators.random_forest.H2ORandomForestEstimator, h2o.estimators.generic.H2OGenericEstimator]
-        :param
-            cutoff: [0, 1] float: % of cumulative feature importances when selecting the features with max increase/decrease
-            in feature importances. E.g. if 0.5 is parsed, the features will be chosen from features whose importances adds
-            up to 50% or just above, starting from the most important features and then second and then so on and so forth
-        :return:
-            pandas Dataframes:
-                1: with feature names before one-hot as the index, and columns being their importances in
-                each model, the absolute change in importances across the two models, the percentage change of importances
-                across two models, the importance ranks in each model (the most important feature is ranked 1), and the change
-                in rank across the two modes
-                2: index is the features with the maximum increase/decrease in importance rank across the two models, selected
-                according to `cutoff`, and columns their ranks in the first model, the change in rank, their importances
-                in the first model and the absolute change iin importance across the two models
-
-                Two variables are needed to correctly unpack the Dataframes returned by the function.
 
         Attributes:
-            model1_, model2_: the first two arguments stored
-            all_results_: the first Dataframe returned
-            max_rank_increase_features_: list of features with the maximum increase in importance ranks
-            min_rank_increase_features_: list of features with the maximum decrease in importance ranks
-            results_: the second, smaller Dataframe returned
-
+            model1_, model2_: the two arguments stored
         """
-
-
-        # the first part outputs the results table, which contains changes in rank, %imp and imp of all features
-        # asserts are pretty much self-explanatory
         assert type(model1) == type(model2), "The two models have to be of the same type for comparison."
         assert type(model1) in [sklearn.ensemble._forest.RandomForestClassifier,
                                 sklearn.tree._classes.DecisionTreeClassifier, sklearn.tree._classes.ExtraTreeClassifier,
@@ -97,12 +38,9 @@ class Woodsmith:
                                 sklearn.tree._classes.DecisionTreeClassifier, sklearn.tree._classes.ExtraTreeClassifier,
                                 h2o.estimators.random_forest.H2ORandomForestEstimator,
                                 h2o.estimators.generic.H2OGenericEstimator], "Model1 is of an unspportued type."
-        assert (0 <= cutoff <= 1), "The values allowed for `output` is `None` or a float [0, 1]."
 
-        # sklearn
         if type(model1) in [sklearn.ensemble._forest.RandomForestClassifier,
                                 sklearn.tree._classes.DecisionTreeClassifier, sklearn.tree._classes.ExtraTreeClassifier]:
-
             assert ('feature_names_before_' and 'feature_names_after_') in dir(model1), \
                 "`feature_names_before` and `feature_names_after` not found in model1 object."
             assert ('feature_names_before_' and 'feature_names_after_') in dir(model2), \
@@ -113,21 +51,96 @@ class Woodsmith:
             assert model1.feature_names_after_ == model2.feature_names_after_, \
                 "The two models have different feature names after data is processed."
 
-            # store models for use in later methods
-            self.model1_ = model1
-            self.model2_ = model2
+        self._model1 = model1
+        self._model2 = model2
+
+
+    """
+    The below code prevents the user from resetting the models associated with the current instance of the object.
+    """
+    @property
+    def model1(self):
+        return self._model1
+
+    @model1.setter
+    def model1(self, new_model):
+        raise ModelResetException("The models cannot be changed; "
+                                  "instantiate another Woodsmith object if you are trying to compare other models. ")
+
+    @property
+    def model2(self):
+        return self._model2
+
+    @model2.setter
+    def model2(self, new_model):
+        raise ModelResetException("The models cannot be changed; "
+                                  "instantiate another Woodsmith object if you are trying to compare other models. ")
+
+
+    def longestCommonPrefix(self, m):
+        """
+        Slick, Pythonic LCP function for use in later functions.
+
+        :param
+            m (list): list of strings from which to search for the LCP.
+        :return:
+            LCP (string): the longest common prefix of all strings in the list.
+        """
+        assert type(m) == list, "The input argument needs to be a list of strings."
+        for i in m:
+            assert type(i) == str, "The input argument needs to be a list of strings."
+
+        # making use of the fact that the list of strings will be sorted and items retrieved min/max by alphabetical order
+        s1 = min(m)
+        s2 = max(m)
+
+        for i, c in enumerate(s1):
+            if c != s2[i]:
+                # stop until the split index is reached
+                LCP = s1[:i]
+                return LCP
+        LCP = s1
+        return LCP
+
+
+    def importance_changes(self):
+        """
+        Takes two fitted forests and outputs a dataframe, detailing the changes of the importance of each feature used
+        in training the two forests.
+
+        The two forests should have been trained on the same features. If the inputs are objects from the sklearn package,
+        then the names of the features before and after the one-hot encoding of the features should have been already
+        stored in the instances of the object, as `model.feature_names_before_` and `model.feature_names_after_` respectively.
+
+        :return:
+            all_results_ (pandas DataFrame): with feature names before one-hot as the index, and columns being their importances in
+            each model, the absolute change in importances across the two models, the percentage change of importances
+            across two models, the importance ranks in each model (the most important feature is ranked 1), and the change
+            in rank across the two modes
+
+        Attributes:
+            all_results_
+            max_rank_increase_features_: list of features with the maximum increase in importance ranks
+            min_rank_increase_features_: list of features with the maximum decrease in importance ranks
+        """
+
+        # sklearn
+        if type(self._model1) in [sklearn.ensemble._forest.RandomForestClassifier,
+                                sklearn.tree._classes.DecisionTreeClassifier, sklearn.tree._classes.ExtraTreeClassifier]:
+
+            self._model_type = 'sklearn'
 
             # extract feature importances
-            f_imp1 = model1.feature_importances_
-            f_imp2 = model2.feature_importances_
+            f_imp1 = self._model1.feature_importances_
+            f_imp2 = self._model2.feature_importances_
 
             # construct feature importances dicts, with feature names being those after one-hot encoding
-            f_imp_scattered_dict_1 = {key:value for key, value in zip(model1.feature_names_after_, f_imp1)}
-            f_imp_scattered_dict_2 = {key:value for key, value in zip(model2.feature_names_after_, f_imp2)}
+            f_imp_scattered_dict_1 = {key:value for key, value in zip(self._model1.feature_names_after_, f_imp1)}
+            f_imp_scattered_dict_2 = {key:value for key, value in zip(self._model2.feature_names_after_, f_imp2)}
 
             # construct feature importances dicts with the original feature names; values initiated at 0
-            f_imp_collated_dict_1 = {key:0 for key in model1.feature_names_before_}
-            f_imp_collated_dict_2 = {key:0 for key in model2.feature_names_before_}
+            f_imp_collated_dict_1 = {key:0 for key in self._model1.feature_names_before_}
+            f_imp_collated_dict_2 = {key:0 for key in self._model2.feature_names_before_}
 
             # add the scattered feature importances to the dicts of collated feature importances for model1
             for key1 in f_imp_scattered_dict_1.keys():
@@ -184,16 +197,22 @@ class Woodsmith:
             all_results = all_results.sort_values('Rank Model1')
 
             self.all_results_ = all_results
+            # `display` works for Jupyter Notebooks
+            try:
+                with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+                    display(self.all_results_)
+            except:
+                with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+                    print(self.all_results_)
+            return self.all_results_
 
         # h2o
         else:
 
-            # store models for use perhaps with later methods
-            self.model1_ = model1
-            self.model2_ = model2
+            self._model_type = 'h2o'
 
-            f_imp_1 = model1._model_json['output']['variable_importances'].as_data_frame()
-            f_imp_2 = model2._model_json['output']['variable_importances'].as_data_frame()
+            f_imp_1 = self._model1._model_json['output']['variable_importances'].as_data_frame()
+            f_imp_2 = self._model2._model_json['output']['variable_importances'].as_data_frame()
 
             all_results = f_imp_1.join(f_imp_2.set_index('variable'), on='variable', lsuffix='_model1', rsuffix='_model2')
 
@@ -214,8 +233,34 @@ class Woodsmith:
 
             self.all_results_ = all_results
 
-        ###
-        # the below part outputs the features of max. increase/decrease in rank and imp., according to the cutoff point
+            # `display` works for Jupyter Notebooks
+            try:
+                with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+                    display(self.all_results_)
+            except:
+                with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+                    print(self.all_results_)
+
+            return self.all_results_
+
+
+    def specific_importance_changes(self, cutoff=1, features=[]):
+        """
+        Returns specific importance changes, which is a subset of `self.all_results_`, based on `cutoff`.
+
+        :param
+            cutoff (float [0, 1]): if `features` is not empty, features' importances will be summed, starting from the
+            most important feature, and the process will stop when the cumsum of the importances equate to or exceed
+            `cutoff`.
+        :return:
+            specific_results_ (pandas DataFrame): index is the features with the maximum increase/decrease in importance
+            rank across the two models, selected according to `cutoff`, and columns their ranks in the first model,
+            the change in rank, their importances in the first model and the absolute change in importance across
+            the two models.
+        """
+
+        # check compliance of `cutoff`
+        assert (0 <= cutoff <= 1), "The values allowed for `output` is a float within the range [0, 1]."
 
         # get index of feature at which the cumulative %importances exceeds the cutoff point specified by the user
         counter1 = 0
@@ -253,33 +298,77 @@ class Woodsmith:
 
         # make dict for final results
         analysis_dict = {
-            'Results': [['Max Rank Increase'] * len(max_rank_increase_features) +
+            'Result': [['Max Rank Increase'] * len(max_rank_increase_features) +
                         ['Max Rank Decrease'] * len(min_rank_increase_features)][0],
-            'Rank in Model1': [results_sub.loc[i, 'Rank Model1'] for i in
+            'Rank Model1': [results_sub.loc[i, 'Rank Model1'] for i in
                                [i for i in max_rank_increase_features + min_rank_increase_features]],
             'Rank Change': [results_sub.loc[i, 'Rank Change'] for i in
                             [i for i in max_rank_increase_features + min_rank_increase_features]],
-            'Importance in Model1': [results_sub.loc[i, 'Feature Importance Model1'] for i in
+            'Feature Importance Model1': [results_sub.loc[i, 'Feature Importance Model1'] for i in
                                      [i for i in max_rank_increase_features + min_rank_increase_features]],
             'Importance Change': [results_sub.loc[i, 'Importance Change'] for i in
                                   [i for i in max_rank_increase_features + min_rank_increase_features]]
         }
 
         # turn final results dict into dataframe
-        results_ = pd.DataFrame(analysis_dict, index=[max_rank_increase_features + min_rank_increase_features])
-        self.results_ = results_
+        specific_results_ = pd.DataFrame(analysis_dict, index=[max_rank_increase_features + min_rank_increase_features])
+        self.specific_results_ = specific_results_
 
-        # `display` works for Jupyter Notebooks
+        # `display` works for Jupyter Notebook
         try:
-            with pd.option_context('display.max_rows', None, 'display.max_columns',None):
-                display(self.all_results_, self.results_)
+            display(self.specific_results_)
         except:
-            with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-                print(self.all_results_, self.results_)
+            print(self.specific_results_)
 
-        return self.all_results_, self.results_
+        return self.specific_results_
 
-       
+
+    def importances_changes_subset(self, features=[]):
+        """
+        Returns a subset of the results obtained by running self.importance_changes().
+
+        :param
+            features (list): a list of features, used to select rows from self.all_results_ to return;
+        :return:
+            all_results_subset_ (pandas DataFrame): results, including the features' ranks in model1, their rank changes,
+            their importances in model1 and the importance changes.
+        """
+        # check if all features in `features` are related to the model of concern
+        for feature in features:
+            if self._model_type == 'sklearn':
+                assert feature in self._model1.feature_names_before_, "Feature {} is not in the model.".format(feature)
+            else:
+                assert feature in self.all_results_.index.tolist(), "Feature {} is not in the model.".format(feature)
+
+        all_results_subset_ = self.all_results_.loc[features, ['Rank Model1', 'Rank Change',
+                                                             'Feature Importance Model1', 'Importance Change']]
+        self.all_results_subset_ = all_results_subset_
+        return self.all_results_subset_
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     def rule_changes(self, tree1, tree2):
         """
 
@@ -402,11 +491,3 @@ class Woodsmith:
         #sklearn
         else:
             pass
-
-
-
-
-
-
-
-
