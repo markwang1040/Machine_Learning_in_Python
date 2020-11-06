@@ -1,3 +1,7 @@
+### DISCLAIMER ###
+# Throughout the entire period when this project was under development, the author was not bound by any form of legal contract or agreement with Tencent.
+# The product's sole ownership is with the author.
+
 import pandas as pd
 import numpy as np
 import sklearn
